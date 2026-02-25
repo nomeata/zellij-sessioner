@@ -191,7 +191,7 @@ impl State {
 
         // "New session" item
         if cur >= self.scroll_offset && cur < vis_end {
-            let mut item = NestedListItem::new("+ New session").color_range(2, ..);
+            let mut item = NestedListItem::new("New session").color_range(2, ..);
             if self.selected == NEW_SESSION_IDX {
                 item = item.selected();
             }
