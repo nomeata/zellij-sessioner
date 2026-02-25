@@ -115,7 +115,7 @@ zellij action launch-or-focus-plugin \
 |-----|--------|
 | `↑` / `k` | Move selection up |
 | `↓` / `j` | Move selection down |
-| `Enter` | Switch to selected session |
+| `Enter` | Switch to selected session / start new session |
 | `d` | Delete selected dead session |
 | `D` | Delete all dead sessions |
 | `Esc` / `q` | Close the plugin |

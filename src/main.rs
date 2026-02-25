@@ -2,6 +2,8 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 use zellij_tile::prelude::*;
 
+const NEW_SESSION_IDX: usize = 0;
+
 #[derive(Default)]
 struct State {
     sessions: Vec<SessionInfo>,
@@ -56,24 +58,15 @@ impl ZellijPlugin for State {
             return;
         }
 
-        let total = self.session_count();
-        if total == 0 {
-            print_text_with_coordinates(
-                Text::new("No sessions found."),
-                0, 0, Some(cols), None,
-            );
-            return;
-        }
-
-        // Header ribbon — .selected() gives green background like built-in tabs
+        // Header ribbon
         print_ribbon_with_coordinates(
             Text::new(" Sessioner ").selected(),
             0, 0, Some(cols), Some(1),
         );
 
-        // Footer: keybindings as plain text (no ribbon = no colored background)
+        // Footer
         let footer_y = rows.saturating_sub(1);
-        let footer = "\u{2191}\u{2193}/jk navigate  Enter attach  d kill dead  D kill all dead  Esc quit";
+        let footer = "\u{2191}\u{2193}/jk navigate  Enter attach/new  d kill dead  D kill all dead  Esc quit";
         print_text_with_coordinates(
             Text::new(footer)
                 .color_substring(3, "\u{2191}\u{2193}/jk")
@@ -84,7 +77,7 @@ impl ZellijPlugin for State {
             0, footer_y, Some(cols), Some(1),
         );
 
-        // Body: nested list of sessions + pane titles
+        // Body
         let body_height = rows.saturating_sub(2);
         if body_height == 0 {
             return;
@@ -96,15 +89,14 @@ impl ZellijPlugin for State {
 }
 
 impl State {
-    fn session_count(&self) -> usize {
-        self.sessions.len() + self.resurrectable.len()
+    /// Total entries: 1 ("New session") + live sessions + dead sessions.
+    fn entry_count(&self) -> usize {
+        1 + self.sessions.len() + self.resurrectable.len()
     }
 
     fn clamp_selection(&mut self) {
-        let total = self.session_count();
-        if total == 0 {
-            self.selected = 0;
-        } else if self.selected >= total {
+        let total = self.entry_count();
+        if self.selected >= total {
             self.selected = total - 1;
         }
     }
@@ -129,58 +121,56 @@ impl State {
 
     /// Build the nested list items with scroll support.
     fn build_list_items(&mut self, visible_rows: usize) -> Vec<NestedListItem> {
-        struct SessionBlock {
+        struct Block {
             header_line: usize,
-            pane_titles: Vec<String>,
-            is_current: bool,
-            is_resurrectable: bool,
-            connected_clients: usize,
-            session_idx: usize,
+            lines: usize, // total lines this block occupies
+            entry_idx: usize,
         }
 
         let mut blocks = Vec::new();
         let mut line = 0usize;
 
+        // "New session" entry
+        blocks.push(Block {
+            header_line: line,
+            lines: 1,
+            entry_idx: NEW_SESSION_IDX,
+        });
+        line += 1;
+
+        // Live sessions
         for (i, session) in self.sessions.iter().enumerate() {
-            let titles = Self::pane_titles(session);
-            let block_size = 1 + titles.len();
-            blocks.push(SessionBlock {
+            let n_panes = Self::pane_titles(session).len();
+            let block_lines = 1 + n_panes;
+            blocks.push(Block {
                 header_line: line,
-                pane_titles: titles,
-                is_current: session.is_current_session,
-                is_resurrectable: false,
-                connected_clients: session.connected_clients,
-                session_idx: i,
+                lines: block_lines,
+                entry_idx: 1 + i,
             });
-            line += block_size;
+            line += block_lines;
         }
 
-        for (i, (_name, age)) in self.resurrectable.iter().enumerate() {
-            blocks.push(SessionBlock {
+        // Dead sessions
+        for (i, _) in self.resurrectable.iter().enumerate() {
+            blocks.push(Block {
                 header_line: line,
-                pane_titles: vec![format!("exited {}", format_duration(*age))],
-                is_current: false,
-                is_resurrectable: true,
-                connected_clients: 0,
-                session_idx: self.sessions.len() + i,
+                lines: 2,
+                entry_idx: 1 + self.sessions.len() + i,
             });
             line += 2;
         }
 
         let total_lines = line;
 
-        // Scroll to keep selected session visible
-        let selected_block = blocks.iter().find(|b| b.session_idx == self.selected);
-        let selected_header = selected_block.map(|b| b.header_line).unwrap_or(0);
-        let selected_size = selected_block
-            .map(|b| 1 + b.pane_titles.len())
-            .unwrap_or(1);
+        // Scroll to keep selected block visible
+        let selected_block = blocks.iter().find(|b| b.entry_idx == self.selected);
+        let sel_header = selected_block.map(|b| b.header_line).unwrap_or(0);
+        let sel_size = selected_block.map(|b| b.lines).unwrap_or(1);
 
-        if selected_header < self.scroll_offset {
-            self.scroll_offset = selected_header;
-        } else if selected_header + selected_size > self.scroll_offset + visible_rows {
-            self.scroll_offset =
-                (selected_header + selected_size).saturating_sub(visible_rows);
+        if sel_header < self.scroll_offset {
+            self.scroll_offset = sel_header;
+        } else if sel_header + sel_size > self.scroll_offset + visible_rows {
+            self.scroll_offset = (sel_header + sel_size).saturating_sub(visible_rows);
         }
         if total_lines <= visible_rows {
             self.scroll_offset = 0;
@@ -190,39 +180,35 @@ impl State {
 
         // Emit visible NestedListItems
         let mut items = Vec::new();
-        let mut current_line = 0usize;
-        let visible_end = self.scroll_offset + visible_rows;
+        let mut cur = 0usize;
+        let vis_end = self.scroll_offset + visible_rows;
 
-        for block in &blocks {
-            let is_selected = block.session_idx == self.selected;
+        // "New session" item
+        if cur >= self.scroll_offset && cur < vis_end {
+            let mut item = NestedListItem::new("+ New session").color_range(2, ..);
+            if self.selected == NEW_SESSION_IDX {
+                item = item.selected();
+            }
+            items.push(item);
+        }
+        cur += 1;
 
-            let name = if block.is_resurrectable {
-                self.resurrectable
-                    .get(block.session_idx - self.sessions.len())
-                    .map(|(n, _)| n.as_str())
-                    .unwrap_or("?")
-            } else {
-                self.sessions
-                    .get(block.session_idx)
-                    .map(|s| s.name.as_str())
-                    .unwrap_or("?")
-            };
+        // Live sessions
+        for (i, session) in self.sessions.iter().enumerate() {
+            let entry_idx = 1 + i;
+            let is_selected = self.selected == entry_idx;
 
-            // Session header
-            if current_line >= self.scroll_offset && current_line < visible_end {
-                let suffix = if block.is_current {
+            if cur >= self.scroll_offset && cur < vis_end {
+                let suffix = if session.is_current_session {
                     " (attached)"
-                } else if block.is_resurrectable {
-                    " (exited)"
-                } else if block.connected_clients > 0 {
+                } else if session.connected_clients > 0 {
                     " (connected)"
                 } else {
                     ""
                 };
 
-                let header_text = format!("{}{}", name, suffix);
-                let name_len = name.len();
-                // Color 0 (orange) for session name, color 2 (green) for status
+                let header_text = format!("{}{}", session.name, suffix);
+                let name_len = session.name.len();
                 let mut item =
                     NestedListItem::new(&header_text).color_range(0, ..name_len);
                 if !suffix.is_empty() {
@@ -233,11 +219,10 @@ impl State {
                 }
                 items.push(item);
             }
-            current_line += 1;
+            cur += 1;
 
-            // Pane titles
-            for title in &block.pane_titles {
-                if current_line >= self.scroll_offset && current_line < visible_end {
+            for title in &Self::pane_titles(session) {
+                if cur >= self.scroll_offset && cur < vis_end {
                     let mut item =
                         NestedListItem::new(title).indent(1).color_range(1, ..);
                     if is_selected {
@@ -245,23 +230,45 @@ impl State {
                     }
                     items.push(item);
                 }
-                current_line += 1;
+                cur += 1;
             }
+        }
+
+        // Dead sessions
+        for (i, (name, age)) in self.resurrectable.iter().enumerate() {
+            let entry_idx = 1 + self.sessions.len() + i;
+            let is_selected = self.selected == entry_idx;
+
+            if cur >= self.scroll_offset && cur < vis_end {
+                let header_text = format!("{} (exited)", name);
+                let name_len = name.len();
+                let mut item =
+                    NestedListItem::new(&header_text).color_range(0, ..name_len);
+                item = item.color_range(2, name_len..header_text.len());
+                if is_selected {
+                    item = item.selected();
+                }
+                items.push(item);
+            }
+            cur += 1;
+
+            if cur >= self.scroll_offset && cur < vis_end {
+                let info = format!("exited {}", format_duration(*age));
+                let mut item =
+                    NestedListItem::new(&info).indent(1).color_range(1, ..);
+                if is_selected {
+                    item = item.selected();
+                }
+                items.push(item);
+            }
+            cur += 1;
         }
 
         items
     }
 
     fn handle_key(&mut self, key: KeyWithModifier) -> bool {
-        let total = self.session_count();
-        if total == 0 {
-            if key.is_key_without_modifier(BareKey::Char('q'))
-                || key.is_key_without_modifier(BareKey::Esc)
-            {
-                close_self();
-            }
-            return false;
-        }
+        let total = self.entry_count();
 
         if key.is_key_without_modifier(BareKey::Up)
             || key.is_key_without_modifier(BareKey::Char('k'))
@@ -282,7 +289,7 @@ impl State {
         }
 
         if key.is_key_without_modifier(BareKey::Enter) {
-            self.switch_to_selected();
+            self.activate_selected();
             return false;
         }
 
@@ -306,26 +313,33 @@ impl State {
         false
     }
 
-    fn switch_to_selected(&self) {
-        if self.selected < self.sessions.len() {
-            let session = &self.sessions[self.selected];
+    fn activate_selected(&self) {
+        if self.selected == NEW_SESSION_IDX {
+            switch_session(None);
+            return;
+        }
+
+        let session_idx = self.selected - 1;
+        if session_idx < self.sessions.len() {
+            let session = &self.sessions[session_idx];
             if session.is_current_session {
                 close_self();
                 return;
             }
             switch_session(Some(&session.name));
         } else {
-            let idx = self.selected - self.sessions.len();
-            if let Some((name, _)) = self.resurrectable.get(idx) {
+            let dead_idx = session_idx - self.sessions.len();
+            if let Some((name, _)) = self.resurrectable.get(dead_idx) {
                 switch_session(Some(name));
             }
         }
     }
 
     fn delete_selected_dead(&self) {
-        if self.selected >= self.sessions.len() {
-            let idx = self.selected - self.sessions.len();
-            if let Some((name, _)) = self.resurrectable.get(idx) {
+        let session_idx = self.selected.saturating_sub(1);
+        if session_idx >= self.sessions.len() {
+            let dead_idx = session_idx - self.sessions.len();
+            if let Some((name, _)) = self.resurrectable.get(dead_idx) {
                 delete_dead_session(name);
             }
         }
