@@ -5,14 +5,13 @@ by showing **pane titles** for each session. See at a glance what's running
 everywhere — particularly useful with tools like [Claude Code](https://claude.ai/code)
 that put their status in the terminal title.
 
-The name follows the German convention of deriving a profession from the task
-performed: a *Sessioner* is one who manages sessions, just as a *Fensterputzer*
-is one who cleans windows.
+The built-in session manager can show pane titles too, but they have to be
+expanded manually one session at a time using keybindings. This plugin shows
+them all at once. There is a [feature request](https://github.com/zellij-org/zellij/issues/4765)
+to add an "expand all" option to the built-in session manager, which would
+make this plugin unnecessary.
 
 ![screenshot](session-manager-plus.png)
-
-Uses Zellij's [built-in UI components](https://zellij.dev/documentation/plugin-ui-rendering.html),
-so it respects your theme.
 
 ## Install
 
@@ -113,3 +112,13 @@ list with pane manifests. For each session it shows:
 - **Pane titles** indented underneath (plugin panes excluded)
 
 Dead (resurrectable) sessions appear at the bottom with their age.
+
+## What about the name?
+
+The name follows the German convention of deriving a profession from the task
+performed: a *Sessioner* is one who manages sessions, just as a *Fensterputzer*
+is one who cleans windows.
+
+## Credits
+
+This plugin was vibe-coded with [Claude Code](https://claude.ai/code).
