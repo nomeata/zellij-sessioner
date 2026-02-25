@@ -24,7 +24,6 @@ impl ZellijPlugin for State {
         subscribe(&[
             EventType::SessionUpdate,
             EventType::Key,
-            EventType::Timer,
             EventType::PermissionRequestResult,
         ]);
     }
@@ -33,7 +32,6 @@ impl ZellijPlugin for State {
         match event {
             Event::PermissionRequestResult(PermissionStatus::Granted) => {
                 self.permissions_granted = true;
-                set_timeout(1.0);
                 true
             }
             Event::PermissionRequestResult(PermissionStatus::Denied) => {
@@ -45,10 +43,6 @@ impl ZellijPlugin for State {
                 self.resurrectable = resurrectable;
                 self.clamp_selection();
                 true
-            }
-            Event::Timer(_) => {
-                set_timeout(1.0);
-                true // re-render to pick up title changes
             }
             Event::Key(key) => self.handle_key(key),
             _ => false,
