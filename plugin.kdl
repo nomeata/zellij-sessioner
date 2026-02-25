@@ -3,3 +3,4 @@ layout {
         plugin location="file:target/wasm32-wasip1/release/zellij-sessioner.wasm"
     }
 }
+show_startup_tips false

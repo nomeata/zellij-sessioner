@@ -82,6 +82,7 @@ layout {
         plugin location="https://github.com/nomeata/zellij-sessioner/releases/latest/download/zellij-sessioner.wasm"
     }
 }
+show_startup_tips false
 ```
 
 Zellij looks for layouts by name in `~/.config/zellij/layouts/` (or whatever
