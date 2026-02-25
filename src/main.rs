@@ -24,6 +24,7 @@ impl ZellijPlugin for State {
         subscribe(&[
             EventType::SessionUpdate,
             EventType::Key,
+            EventType::Timer,
             EventType::PermissionRequestResult,
         ]);
     }
@@ -32,6 +33,7 @@ impl ZellijPlugin for State {
         match event {
             Event::PermissionRequestResult(PermissionStatus::Granted) => {
                 self.permissions_granted = true;
+                set_timeout(1.0);
                 true
             }
             Event::PermissionRequestResult(PermissionStatus::Denied) => {
@@ -43,6 +45,10 @@ impl ZellijPlugin for State {
                 self.resurrectable = resurrectable;
                 self.clamp_selection();
                 true
+            }
+            Event::Timer(_) => {
+                set_timeout(1.0);
+                true // re-render to pick up title changes
             }
             Event::Key(key) => self.handle_key(key),
             _ => false,
@@ -64,18 +70,28 @@ impl ZellijPlugin for State {
             0, 0, Some(cols), Some(1),
         );
 
-        // Footer
+        // Footer — use color_range with exact positions to avoid stray matches
         let footer_y = rows.saturating_sub(1);
-        let footer = "\u{2191}\u{2193}/jk navigate  Enter attach/new  d kill dead  D kill all dead  Esc quit";
-        print_text_with_coordinates(
-            Text::new(footer)
-                .color_substring(3, "\u{2191}\u{2193}/jk")
-                .color_substring(3, "Enter")
-                .color_substring(3, "d")
-                .color_nth_substring(3, "D", 1)
-                .color_substring(3, "Esc"),
-            0, footer_y, Some(cols), Some(1),
-        );
+        let keys: &[(&str, &str)] = &[
+            ("\u{2191}\u{2193}/jk", " navigate  "),
+            ("Enter", " attach/new  "),
+            ("d", " kill dead  "),
+            ("D", " kill all dead  "),
+            ("Esc", " quit"),
+        ];
+        let mut footer_str = String::new();
+        let mut ranges: Vec<(usize, usize)> = Vec::new();
+        for (key, label) in keys {
+            let start = footer_str.len();
+            footer_str.push_str(key);
+            ranges.push((start, footer_str.len()));
+            footer_str.push_str(label);
+        }
+        let mut footer_text = Text::new(&footer_str);
+        for (start, end) in ranges {
+            footer_text = footer_text.color_range(3, start..end);
+        }
+        print_text_with_coordinates(footer_text, 0, footer_y, Some(cols), Some(1));
 
         // Body
         let body_height = rows.saturating_sub(2);
