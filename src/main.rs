@@ -359,15 +359,20 @@ impl State {
 fn keyhints(pairs: &[(&str, &str)]) -> Text {
     let mut s = String::new();
     let mut ranges = Vec::new();
+    let mut char_pos = 0usize;
     for (i, (key, label)) in pairs.iter().enumerate() {
         if i > 0 {
             s.push_str("  ");
+            char_pos += 2;
         }
-        let start = s.len();
+        let start = char_pos;
         s.push_str(key);
-        ranges.push((start, s.len()));
+        char_pos += key.chars().count();
+        ranges.push((start, char_pos));
         s.push(' ');
+        char_pos += 1;
         s.push_str(label);
+        char_pos += label.chars().count();
     }
     let mut text = Text::new(&s);
     for (start, end) in ranges {
