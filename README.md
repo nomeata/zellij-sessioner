@@ -1,9 +1,13 @@
-# session-manager-plus
+# zellij-sessioner
 
 A [Zellij](https://zellij.dev) plugin that enhances the built-in session manager
 by showing **pane titles** for each session. See at a glance what's running
 everywhere — particularly useful with tools like [Claude Code](https://claude.ai/code)
 that put their status in the terminal title.
+
+The name follows the German convention of deriving a profession from the task
+performed: a *Sessioner* is one who manages sessions, just as a *Fensterputzer*
+is one who cleans windows.
 
 ![screenshot](session-manager-plus.png)
 
@@ -19,29 +23,54 @@ caches it automatically:
 
 ```
 zellij action launch-or-focus-plugin \
-  https://github.com/joachimschmidt557/session-manager-plus/releases/latest/download/session-manager-plus.wasm \
+  https://github.com/nomeata/zellij-sessioner/releases/latest/download/zellij-sessioner.wasm \
   --floating
 ```
 
 Or pin a specific version:
 
 ```
-https://github.com/joachimschmidt557/session-manager-plus/releases/download/v0.1.0/session-manager-plus.wasm
+https://github.com/nomeata/zellij-sessioner/releases/download/v0.1.0/zellij-sessioner.wasm
 ```
 
 ### Keybinding
 
-Add to your Zellij config (`~/.config/zellij/config.kdl`):
+The built-in session manager is bound to `Ctrl o` then `w`. You can **replace**
+it with zellij-sessioner by overriding that binding in your Zellij config
+(`~/.config/zellij/config.kdl`):
 
 ```kdl
-shared_except "locked" {
-    bind "Ctrl y" {
-        LaunchOrFocusPlugin "https://github.com/joachimschmidt557/session-manager-plus/releases/latest/download/session-manager-plus.wasm" {
-            floating true
+keybinds {
+    session {
+        bind "w" {
+            LaunchOrFocusPlugin "https://github.com/nomeata/zellij-sessioner/releases/latest/download/zellij-sessioner.wasm" {
+                floating true
+                move_to_focused_tab true
+            };
+            SwitchToMode "Normal"
         }
     }
 }
 ```
+
+Or if you prefer to keep the built-in and add this alongside it, bind a
+different key (e.g. `e`):
+
+```kdl
+keybinds {
+    session {
+        bind "e" {
+            LaunchOrFocusPlugin "https://github.com/nomeata/zellij-sessioner/releases/latest/download/zellij-sessioner.wasm" {
+                floating true
+                move_to_focused_tab true
+            };
+            SwitchToMode "Normal"
+        }
+    }
+}
+```
+
+Then open it with `Ctrl o` then `e`.
 
 ### Build from source
 
@@ -60,7 +89,7 @@ Then use the local build:
 
 ```bash
 zellij action launch-or-focus-plugin \
-  file:target/wasm32-wasip1/release/session-manager-plus.wasm \
+  file:target/wasm32-wasip1/release/zellij-sessioner.wasm \
   --floating
 ```
 

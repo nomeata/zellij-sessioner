@@ -20,7 +20,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: wasm-plugin
-          path: target/wasm32-wasip1/release/session-manager-plus.wasm
+          path: target/wasm32-wasip1/release/zellij-sessioner.wasm
 
   release:
     needs: [build]
@@ -30,7 +30,7 @@ jobs:
         with:
           name: wasm-plugin
       - run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-      - run: gh release create -t "Release ${{ env.TAG }}" "${{ env.TAG }}" session-manager-plus.wasm
+      - run: gh release create -t "Release ${{ env.TAG }}" "${{ env.TAG }}" zellij-sessioner.wasm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}

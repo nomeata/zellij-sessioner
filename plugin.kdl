@@ -1,7 +1,7 @@
 layout {
     floating_panes {
         pane {
-            plugin location="file:target/wasm32-wasip1/release/session-manager-plus.wasm"
+            plugin location="file:target/wasm32-wasip1/release/zellij-sessioner.wasm"
             width "60%"
             height "60%"
             x "20%"

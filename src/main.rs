@@ -67,7 +67,7 @@ impl ZellijPlugin for State {
 
         // Header ribbon — .selected() gives green background like built-in tabs
         print_ribbon_with_coordinates(
-            Text::new(" Session Manager+ ").selected(),
+            Text::new(" Sessioner ").selected(),
             0, 0, Some(cols), Some(1),
         );
 

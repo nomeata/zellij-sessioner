@@ -2361,13 +2361,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "session-manager-plus"
-version = "0.1.0"
-dependencies = [
- "zellij-tile",
-]
-
-[[package]]
 name = "sha2"
 version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3604,6 +3597,13 @@ dependencies = [
  "quote",
  "syn 2.0.117",
  "synstructure",
+]
+
+[[package]]
+name = "zellij-sessioner"
+version = "0.1.0"
+dependencies = [
+ "zellij-tile",
 ]
 
 [[package]]
