@@ -71,6 +71,28 @@ keybinds {
 
 Then open it with `Ctrl o` then `e`.
 
+### Layout (`zellij -l sessioner`)
+
+To launch the plugin with `zellij -l sessioner` (similar to `zellij -l welcome`),
+place a layout file at `~/.config/zellij/layouts/sessioner.kdl`:
+
+```kdl
+layout {
+    floating_panes {
+        pane {
+            plugin location="https://github.com/nomeata/zellij-sessioner/releases/latest/download/zellij-sessioner.wasm"
+            width "60%"
+            height "60%"
+            x "20%"
+            y "20%"
+        }
+    }
+}
+```
+
+Zellij looks for layouts by name in `~/.config/zellij/layouts/` (or whatever
+`layout_dir` is set to in your config).
+
 ### Build from source
 
 Requires Rust with the `wasm32-wasip1` target.
