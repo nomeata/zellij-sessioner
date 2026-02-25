@@ -113,6 +113,16 @@ list with pane manifests. For each session it shows:
 
 Dead (resurrectable) sessions appear at the bottom with their age.
 
+## Releasing
+
+1. Bump the version in `Cargo.toml`
+2. Run `cargo build` to update `Cargo.lock`
+3. Commit: `git commit -am "Release vX.Y.Z"`
+4. Tag: `git tag vX.Y.Z`
+5. Push: `git push && git push --tags`
+
+GitHub Actions will build the `.wasm` and create a release automatically.
+
 ## What about the name?
 
 The name follows the German convention of deriving a profession from the task
