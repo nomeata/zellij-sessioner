@@ -130,14 +130,17 @@ list with pane manifests. For each session it shows:
 
 Dead (resurrectable) sessions appear at the bottom with their age.
 
-## Limitations
+## Pane title freshness
 
-Pane titles are only updated when Zellij pushes a `SessionUpdate` event, which
-happens on session-level changes (new session, session exit, focus change) — not
-when a pane title changes within a session. This means the displayed titles may
-be stale. The plugin API does not provide a way to request fresh session data on
-demand. This is the same limitation the built-in session manager has; see
+Zellij only pushes `SessionUpdate` events (the only source of cross-session pane
+data) on session-level changes — not when a pane title changes within a session.
+The plugin API does not provide a way to request fresh session data on demand.
+This is the same limitation the built-in session manager has; see
 [zellij-org/zellij#4765](https://github.com/zellij-org/zellij/issues/4765).
+
+As a workaround, the plugin periodically renames its own pane title (cycling a
+spinner), which counts as a pane change and nudges Zellij into pushing a fresh
+`SessionUpdate`. This keeps the displayed titles reasonably up to date.
 
 ## Releasing
 

@@ -3,6 +3,7 @@ use std::time::Duration;
 use zellij_tile::prelude::*;
 
 const NEW_SESSION_IDX: usize = 0;
+const SPINNER: &[char] = &['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
 #[derive(Default)]
 struct State {
@@ -11,6 +12,7 @@ struct State {
     selected: usize,
     scroll_offset: usize,
     permissions_granted: bool,
+    spinner_idx: usize,
 }
 
 register_plugin!(State);
@@ -24,6 +26,7 @@ impl ZellijPlugin for State {
         subscribe(&[
             EventType::SessionUpdate,
             EventType::Key,
+            EventType::Timer,
             EventType::PermissionRequestResult,
         ]);
     }
@@ -32,6 +35,7 @@ impl ZellijPlugin for State {
         match event {
             Event::PermissionRequestResult(PermissionStatus::Granted) => {
                 self.permissions_granted = true;
+                set_timeout(2.0);
                 true
             }
             Event::PermissionRequestResult(PermissionStatus::Denied) => {
@@ -43,6 +47,16 @@ impl ZellijPlugin for State {
                 self.resurrectable = resurrectable;
                 self.clamp_selection();
                 true
+            }
+            Event::Timer(_) => {
+                // Cycle the plugin pane title to trigger a fresh
+                // SessionUpdate with up-to-date pane titles.
+                let frame = SPINNER[self.spinner_idx % SPINNER.len()];
+                self.spinner_idx = self.spinner_idx.wrapping_add(1);
+                let plugin_id = get_plugin_ids().plugin_id;
+                rename_plugin_pane(plugin_id, &format!("Sessioner {}", frame));
+                set_timeout(2.0);
+                false
             }
             Event::Key(key) => self.handle_key(key),
             _ => false,
