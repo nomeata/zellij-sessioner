@@ -70,28 +70,18 @@ impl ZellijPlugin for State {
             0, 0, Some(cols), Some(1),
         );
 
-        // Footer — use color_range with exact positions to avoid stray matches
+        // Footer
         let footer_y = rows.saturating_sub(1);
-        let keys: &[(&str, &str)] = &[
-            ("\u{2191}\u{2193}/jk", " navigate  "),
-            ("Enter", " attach/new  "),
-            ("d", " kill dead  "),
-            ("D", " kill all dead  "),
-            ("Esc", " quit"),
-        ];
-        let mut footer_str = String::new();
-        let mut ranges: Vec<(usize, usize)> = Vec::new();
-        for (key, label) in keys {
-            let start = footer_str.len();
-            footer_str.push_str(key);
-            ranges.push((start, footer_str.len()));
-            footer_str.push_str(label);
-        }
-        let mut footer_text = Text::new(&footer_str);
-        for (start, end) in ranges {
-            footer_text = footer_text.color_range(3, start..end);
-        }
-        print_text_with_coordinates(footer_text, 0, footer_y, Some(cols), Some(1));
+        print_text_with_coordinates(
+            keyhints(&[
+                ("\u{2191}\u{2193}/jk", "navigate"),
+                ("Enter", "attach/new"),
+                ("d", "kill dead"),
+                ("D", "kill all dead"),
+                ("Esc", "quit"),
+            ]),
+            0, footer_y, Some(cols), Some(1),
+        );
 
         // Body
         let body_height = rows.saturating_sub(2);
@@ -332,6 +322,7 @@ impl State {
     fn activate_selected(&self) {
         if self.selected == NEW_SESSION_IDX {
             switch_session(None);
+            close_self();
             return;
         }
 
@@ -343,10 +334,12 @@ impl State {
                 return;
             }
             switch_session(Some(&session.name));
+            close_self();
         } else {
             let dead_idx = session_idx - self.sessions.len();
             if let Some((name, _)) = self.resurrectable.get(dead_idx) {
                 switch_session(Some(name));
+                close_self();
             }
         }
     }
@@ -360,6 +353,27 @@ impl State {
             }
         }
     }
+}
+
+/// Build a Text with key names highlighted (color 3) and labels plain.
+fn keyhints(pairs: &[(&str, &str)]) -> Text {
+    let mut s = String::new();
+    let mut ranges = Vec::new();
+    for (i, (key, label)) in pairs.iter().enumerate() {
+        if i > 0 {
+            s.push_str("  ");
+        }
+        let start = s.len();
+        s.push_str(key);
+        ranges.push((start, s.len()));
+        s.push(' ');
+        s.push_str(label);
+    }
+    let mut text = Text::new(&s);
+    for (start, end) in ranges {
+        text = text.color_range(3, start..end);
+    }
+    text
 }
 
 fn format_duration(d: Duration) -> String {
