@@ -78,14 +78,8 @@ place a layout file at `~/.config/zellij/layouts/sessioner.kdl`:
 
 ```kdl
 layout {
-    floating_panes {
-        pane {
-            plugin location="https://github.com/nomeata/zellij-sessioner/releases/latest/download/zellij-sessioner.wasm"
-            width "60%"
-            height "60%"
-            x "20%"
-            y "20%"
-        }
+    pane borderless=true {
+        plugin location="https://github.com/nomeata/zellij-sessioner/releases/latest/download/zellij-sessioner.wasm"
     }
 }
 ```

@@ -1,11 +1,5 @@
 layout {
-    floating_panes {
-        pane {
-            plugin location="file:target/wasm32-wasip1/release/zellij-sessioner.wasm"
-            width "60%"
-            height "60%"
-            x "20%"
-            y "20%"
-        }
+    pane borderless=true {
+        plugin location="file:target/wasm32-wasip1/release/zellij-sessioner.wasm"
     }
 }
